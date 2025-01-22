@@ -1,0 +1,6 @@
+[submodule "lib/batteries"]
+	path = lib/batteries
+	url = https://github.com/1bardesign/batteries.git
+[submodule "lib/push"]
+	path = lib/push
+	url = https://github.com/Ulydev/push.git
