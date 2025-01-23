@@ -38,12 +38,12 @@ function love.load()
     end
   end)
 
-  state.currentView.load()
+  state.currentView.load(state.bus)
 end
 
 function love.update(dt)
   if state.currentView.update then
-    state.currentView.update(state.bus, dt)
+    state.currentView.update(dt)
   end
 end
 

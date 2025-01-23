@@ -4,3 +4,6 @@
 [submodule "lib/push"]
 	path = lib/push
 	url = https://github.com/Ulydev/push.git
+[submodule "lib/slick"]
+	path = lib/slick
+	url = https://github.com/erinmaus/slick.git
