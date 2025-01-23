@@ -13,7 +13,7 @@ SPEED_INCREMENT = 10
 
 Game = {}
 
-local font, world, state
+local font, world, state, timer
 
 local function getPlayerInput(player)
   local y = 0
@@ -76,6 +76,36 @@ machine:add_state("playing", {
     updateBall(dt)
     updatePlayer(state.player1, dt)
     updatePlayer(state.player2, dt)
+
+    if state.ball.position.x + BALL_RADIUS < state.leftEdge then
+      state.lastScore = "player1"
+      machine:set_state("score")
+    elseif state.ball.position.x - BALL_RADIUS > state.rightEdge then
+      state.lastScore = "player2"
+      machine:set_state("score")
+    end
+  end,
+  draw = function()
+    slick.drawWorld(world)
+  end
+})
+
+machine:add_state("score", {
+  enter = function(ctx)
+    ctx.timer = b.timer(1, nil, function()
+      machine:set_state("playing")
+    end)
+
+    local w, h = push:getDimensions()
+    state.ball.position = b.vec2(w / 2, h / 2)
+    state.ball.direction = b.vec2(-1, -1):normalize()
+    state.ball.speed = BALL_SPEED
+    world:update(state.ball, state.ball.position.x, state.ball.position.y)
+  end,
+  update = function(ctx, dt)
+    ctx.timer:update(dt)
+    updatePlayer(state.player1, dt)
+    updatePlayer(state.player2, dt)
   end,
   draw = function()
     slick.drawWorld(world)
@@ -86,9 +116,13 @@ function Game.load()
   local w, h = push:getDimensions()
   local middle = (h - PADDLE_HEIGHT) / 2
   font = lg.newFont(26)
+  timer = b.timer(nil, nil)
   state = {
+    leftEdge = 0,
+    rightEdge = w,
     topBound = 10,
     bottomBound = h - 10,
+    lastScore = nil,
     player1 = {
       name = "player1",
       upKey = "w",
@@ -155,8 +189,10 @@ function Game.update(dt)
 end
 
 function Game.keypressed(_bus, key)
-  if (key == "space" or key == "return") and machine:in_state("intro") then
-    machine:set_state("playing")
+  if (key == "space" or key == "return") then
+    if machine:in_state("intro") then
+      machine:set_state("playing")
+    end
   end
 end
 
