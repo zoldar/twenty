@@ -12,10 +12,79 @@ PADDLE_SPEED = 200
 BALL_RADIUS = 20
 BALL_SPEED = 200
 SPEED_INCREMENT = 10
+MAX_SCORE = 10
 
 Game = {}
 
 local font, scoreFont, world, state, mainBus
+
+local function randomDirection()
+  local angle1 = love.math.random(-math.pi / 4, math.pi / 4)
+  local angle2 = love.math.random(-math.pi * 5 / 4, -math.pi * 3 / 4)
+  return b.vec2():polar(1, b.table.pick_random({ angle1, angle2 }))
+end
+
+local function reset()
+  local w, h = push:getDimensions()
+  local middle = (h - PADDLE_HEIGHT) / 2
+  state = {
+    leftEdge = 0,
+    rightEdge = w,
+    topBound = 10,
+    bottomBound = h - 10,
+    lastScore = nil,
+    player1 = {
+      name = "player1",
+      upKey = "w",
+      downKey = "s",
+      type = "human",
+      position = b.vec2(PADDLE_WIDTH, middle),
+      score = 0
+    },
+    player2 = {
+      name = "player2",
+      upKey = "up",
+      downKey = "down",
+      type = "cpu",
+      position = b.vec2(w - 2 * PADDLE_WIDTH, middle),
+      score = 0
+    },
+    ball = {
+      type = "ball",
+      speed = BALL_SPEED,
+      position = b.vec2(w / 2, h / 2),
+      direction = randomDirection()
+    }
+  }
+
+  world = slick.newWorld(w, h)
+
+  world:add(
+    state.player1,
+    state.player1.position.x,
+    state.player1.position.y,
+    slick.newRectangleShape(0, 0, PADDLE_WIDTH, PADDLE_HEIGHT)
+  )
+
+  world:add(
+    state.player2,
+    state.player2.position.x,
+    state.player2.position.y,
+    slick.newRectangleShape(0, 0, PADDLE_WIDTH, PADDLE_HEIGHT)
+  )
+
+  world:add(
+    state.ball,
+    state.ball.position.x,
+    state.ball.position.y,
+    slick.newCircleShape(0, 0, BALL_RADIUS)
+  )
+
+  world:add({ type = "level" }, 0, 0, slick.newShapeGroup(
+    slick.newRectangleShape(0, 0, w, 10),
+    slick.newRectangleShape(0, h - 10, w, 10)
+  ))
+end
 
 local function getPlayerInput(player)
   local y = 0
@@ -90,11 +159,6 @@ local function updateBall(dt)
   end
 end
 
-local function randomDirection()
-  local angle1 = love.math.random(-math.pi / 4, math.pi / 4)
-  local angle2 = love.math.random(-math.pi * 5 / 4, -math.pi * 3 / 4)
-  return b.vec2():polar(1, b.table.pick_random({ angle1, angle2 }))
-end
 
 local function drawUI()
   local w, _h = push:getDimensions()
@@ -115,6 +179,7 @@ local machine = b.state_machine()
 
 machine:add_state("intro", {
   enter = function(ctx)
+    reset()
     ctx.scene = Inky.scene()
     ctx.pointer = Inky.pointer(ctx.scene)
     ctx.buttonOnePlayer = Button(ctx.scene, "One Player", font, function()
@@ -137,7 +202,7 @@ machine:add_state("intro", {
     ctx.pointer:setPosition(lx, ly)
   end,
   draw = function(ctx)
-    local w, h = push:getDimensions()
+    local w, _h = push:getDimensions()
     ctx.scene:beginFrame()
 
     lg.setColor(1, 1, 1)
@@ -158,10 +223,10 @@ machine:add_state("playing", {
     updatePlayer(state.player2, dt)
 
     if state.ball.position.x + BALL_RADIUS < state.leftEdge then
-      state.lastScore = "player1"
+      state.lastScore = "player2"
       machine:set_state("score")
     elseif state.ball.position.x - BALL_RADIUS > state.rightEdge then
-      state.lastScore = "player2"
+      state.lastScore = "player1"
       machine:set_state("score")
     end
   end,
@@ -173,18 +238,22 @@ machine:add_state("playing", {
 
 machine:add_state("score", {
   enter = function(ctx)
-    ctx.timer = b.timer(1, nil, function()
-      machine:set_state("playing")
-    end)
-
     local scoringPlayer = state[state.lastScore]
     scoringPlayer.score = scoringPlayer.score + 1
 
-    local w, h = push:getDimensions()
-    state.ball.position = b.vec2(w / 2, h / 2)
-    state.ball.direction = randomDirection()
-    state.ball.speed = BALL_SPEED
-    world:update(state.ball, state.ball.position.x, state.ball.position.y)
+    if scoringPlayer.score == MAX_SCORE then
+      machine:set_state("finished")
+    else
+      ctx.timer = b.timer(1, nil, function()
+        machine:set_state("playing")
+      end)
+
+      local w, h = push:getDimensions()
+      state.ball.position = b.vec2(w / 2, h / 2)
+      state.ball.direction = randomDirection()
+      state.ball.speed = BALL_SPEED
+      world:update(state.ball, state.ball.position.x, state.ball.position.y)
+    end
   end,
   update = function(ctx, dt)
     ctx.timer:update(dt)
@@ -197,70 +266,37 @@ machine:add_state("score", {
   end
 })
 
+machine:add_state("finished", {
+  enter = function(ctx)
+    ctx.timer = b.timer(2, nil, function()
+      machine:set_state("intro")
+    end)
+
+    if state.player1.score > state.player2.score then
+      ctx.winner = state.player1
+    else
+      ctx.winner = state.player2
+    end
+  end,
+  update = function(ctx, dt)
+    ctx.timer:update(dt)
+  end,
+  draw = function(ctx)
+    local w, h = push:getDimensions()
+    slick.drawWorld(world)
+    drawUI()
+    lg.printf(
+      ctx.winner.name .. " won!",
+      font, 0, (h - font:getHeight()) / 2, w, "center"
+    )
+  end
+})
+
 function Game.load(bus)
-  local w, h = push:getDimensions()
-  local middle = (h - PADDLE_HEIGHT) / 2
   mainBus = bus
   font = lg.newFont(26)
   scoreFont = lg.newFont(18)
-  state = {
-    leftEdge = 0,
-    rightEdge = w,
-    topBound = 10,
-    bottomBound = h - 10,
-    lastScore = nil,
-    player1 = {
-      name = "player1",
-      upKey = "w",
-      downKey = "s",
-      type = "human",
-      position = b.vec2(PADDLE_WIDTH, middle),
-      score = 0
-    },
-    player2 = {
-      name = "player2",
-      upKey = "up",
-      downKey = "down",
-      type = "cpu",
-      position = b.vec2(w - 2 * PADDLE_WIDTH, middle),
-      score = 0
-    },
-    ball = {
-      type = "ball",
-      speed = BALL_SPEED,
-      position = b.vec2(w / 2, h / 2),
-      direction = randomDirection()
-    }
-  }
-
-  world = slick.newWorld(w, h)
-
-  world:add(
-    state.player1,
-    state.player1.position.x,
-    state.player1.position.y,
-    slick.newRectangleShape(0, 0, PADDLE_WIDTH, PADDLE_HEIGHT)
-  )
-
-  world:add(
-    state.player2,
-    state.player2.position.x,
-    state.player2.position.y,
-    slick.newRectangleShape(0, 0, PADDLE_WIDTH, PADDLE_HEIGHT)
-  )
-
-  world:add(
-    state.ball,
-    state.ball.position.x,
-    state.ball.position.y,
-    slick.newCircleShape(0, 0, BALL_RADIUS)
-  )
-
-  world:add({ type = "level" }, 0, 0, slick.newShapeGroup(
-    slick.newRectangleShape(0, 0, w, 10),
-    slick.newRectangleShape(0, h - 10, w, 10)
-  ))
-
+  reset()
   machine:set_state("intro")
 end
 
@@ -282,7 +318,7 @@ function Game.keypressed(_bus, key)
   end
 
   if (key == "q" or key == "escape") then
-    if machine:in_state("playing") then
+    if not machine:in_state("intro") then
       machine:set_state("intro")
       return true
     end
