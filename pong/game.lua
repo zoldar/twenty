@@ -32,10 +32,15 @@ local function getPlayerInput(player)
 end
 
 local function getCPUInput(player)
+  local w, _h = push:getDimensions()
   local ballY = state.ball.position.y
   local playerY = player.position.y + PADDLE_HEIGHT / 2
 
   local y = 0
+
+  if math.abs(player.position.x - state.ball.position.x) > w * 2 / 3 then
+    return y
+  end
 
   if ballY > playerY + 10 then
     y = 1
