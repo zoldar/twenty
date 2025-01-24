@@ -29,8 +29,30 @@ local function getPlayerInput(player)
   return y
 end
 
+local function getCPUInput(player)
+  local ballY = state.ball.position.y
+  local playerY = player.position.y + PADDLE_HEIGHT / 2
+
+  local y = 0
+
+  if ballY > playerY + 10 then
+    y = 1
+  end
+
+  if ballY < playerY - 10 then
+    y = -1
+  end
+
+  return y
+end
+
 local function updatePlayer(player, dt)
-  local inputY = getPlayerInput(player)
+  local inputY
+  if player.type == "human" then
+    inputY = getPlayerInput(player)
+  else
+    inputY = getCPUInput(player)
+  end
 
   player.position.y = b.math.clamp(
     player.position.y + inputY * PADDLE_SPEED * dt,
@@ -59,6 +81,12 @@ local function updateBall(dt)
     direction.x, direction.y = bounce.x, bounce.y
     state.ball.speed = state.ball.speed + SPEED_INCREMENT
   end
+end
+
+local function randomDirection()
+  local angle1 = love.math.random(-math.pi / 4, math.pi / 4)
+  local angle2 = love.math.random(-math.pi * 5 / 4, -math.pi * 3 / 4)
+  return b.vec2():polar(1, b.table.pick_random({angle1, angle2}))
 end
 
 local machine = b.state_machine()
@@ -98,7 +126,7 @@ machine:add_state("score", {
 
     local w, h = push:getDimensions()
     state.ball.position = b.vec2(w / 2, h / 2)
-    state.ball.direction = b.vec2(-1, -1):normalize()
+    state.ball.direction = randomDirection()
     state.ball.speed = BALL_SPEED
     world:update(state.ball, state.ball.position.x, state.ball.position.y)
   end,
@@ -135,7 +163,7 @@ function Game.load()
       name = "player2",
       upKey = "up",
       downKey = "down",
-      type = "human",
+      type = "cpu",
       position = b.vec2(w - 2 * PADDLE_WIDTH, middle),
       score = 0
     },
@@ -143,7 +171,7 @@ function Game.load()
       type = "ball",
       speed = BALL_SPEED,
       position = b.vec2(w / 2, h / 2),
-      direction = b.vec2(-1, -1):normalize()
+      direction = randomDirection()
     }
   }
 
