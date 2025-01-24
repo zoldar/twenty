@@ -12,7 +12,7 @@ PADDLE_SPEED = 200
 BALL_RADIUS = 20
 BALL_SPEED = 200
 SPEED_INCREMENT = 10
-MAX_SCORE = 10
+MAX_SCORE = 5
 
 Game = {}
 
@@ -28,6 +28,7 @@ local function reset()
   local w, h = push:getDimensions()
   local middle = (h - PADDLE_HEIGHT) / 2
   state = {
+    debug = false,
     leftEdge = 0,
     rightEdge = w,
     topBound = 10,
@@ -159,6 +160,47 @@ local function updateBall(dt)
   end
 end
 
+local function drawGame()
+  local w, h = push:getDimensions()
+
+  lg.setColor(.2, .2, .2)
+
+  lg.rectangle("fill", 0, 0, w, state.topBound)
+  lg.rectangle("fill", 0, state.bottomBound, w, h)
+
+  lg.setLineWidth(3)
+  lg.line(w / 2, 0, w / 2, h)
+  lg.setLineWidth(1)
+
+  lg.setColor(.8, .8, .8)
+
+  lg.rectangle(
+    "fill",
+    state.player1.position.x,
+    state.player1.position.y,
+    PADDLE_WIDTH,
+    PADDLE_HEIGHT
+  )
+
+  lg.rectangle(
+    "fill",
+    state.player2.position.x,
+    state.player2.position.y,
+    PADDLE_WIDTH,
+    PADDLE_HEIGHT
+  )
+
+  lg.circle(
+    "fill",
+    state.ball.position.x,
+    state.ball.position.y,
+    BALL_RADIUS
+  )
+
+  if state.debug then
+    slick.drawWorld(world)
+  end
+end
 
 local function drawUI()
   local w, _h = push:getDimensions()
@@ -231,7 +273,7 @@ machine:add_state("playing", {
     end
   end,
   draw = function()
-    slick.drawWorld(world)
+    drawGame()
     drawUI()
   end
 })
@@ -261,7 +303,7 @@ machine:add_state("score", {
     updatePlayer(state.player2, dt)
   end,
   draw = function()
-    slick.drawWorld(world)
+    drawGame()
     drawUI()
   end
 })
@@ -283,7 +325,7 @@ machine:add_state("finished", {
   end,
   draw = function(ctx)
     local w, h = push:getDimensions()
-    slick.drawWorld(world)
+    drawGame()
     drawUI()
     lg.printf(
       ctx.winner.name .. " won!",
@@ -315,6 +357,10 @@ function Game.keypressed(_bus, key)
     if machine:in_state("intro") then
       machine:set_state("playing")
     end
+  end
+
+  if (key == "d") then
+    state.debug = not state.debug
   end
 
   if (key == "q" or key == "escape") then
