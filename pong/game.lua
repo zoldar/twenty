@@ -15,7 +15,7 @@ SPEED_INCREMENT = 10
 
 Game = {}
 
-local font, world, state, mainBus
+local font, scoreFont, world, state, mainBus
 
 local function getPlayerInput(player)
   local y = 0
@@ -91,6 +91,21 @@ local function randomDirection()
   return b.vec2():polar(1, b.table.pick_random({ angle1, angle2 }))
 end
 
+local function drawUI()
+  local w, _h = push:getDimensions()
+
+  lg.print(
+    state.player1.score,
+    scoreFont, w / 2 - 30 - scoreFont:getWidth(state.player1.score),
+    15
+  )
+  lg.print(
+    state.player2.score, scoreFont,
+    w / 2 + 30,
+    15
+  )
+end
+
 local machine = b.state_machine()
 
 machine:add_state("intro", {
@@ -147,6 +162,7 @@ machine:add_state("playing", {
   end,
   draw = function()
     slick.drawWorld(world)
+    drawUI()
   end
 })
 
@@ -155,6 +171,9 @@ machine:add_state("score", {
     ctx.timer = b.timer(1, nil, function()
       machine:set_state("playing")
     end)
+
+    local scoringPlayer = state[state.lastScore]
+    scoringPlayer.score = scoringPlayer.score + 1
 
     local w, h = push:getDimensions()
     state.ball.position = b.vec2(w / 2, h / 2)
@@ -169,6 +188,7 @@ machine:add_state("score", {
   end,
   draw = function()
     slick.drawWorld(world)
+    drawUI()
   end
 })
 
@@ -177,6 +197,7 @@ function Game.load(bus)
   local middle = (h - PADDLE_HEIGHT) / 2
   mainBus = bus
   font = lg.newFont(26)
+  scoreFont = lg.newFont(18)
   state = {
     leftEdge = 0,
     rightEdge = w,
