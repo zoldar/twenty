@@ -4,6 +4,7 @@ local push = require("lib/push/push")
 local b = require("lib/batteries")
 local slick = require("lib.slick.slick")
 local Inky = require("lib/inky")
+local Button = require("ui/button")
 
 PADDLE_HEIGHT = 100
 PADDLE_WIDTH = 20
@@ -90,50 +91,23 @@ local function randomDirection()
   return b.vec2():polar(1, b.table.pick_random({ angle1, angle2 }))
 end
 
-local function newButton(scene, label, action)
-  return Inky.defineElement(function(self)
-    self.props.hover = false
-
-    self:onPointer("release", action)
-
-    self:onPointerEnter(function()
-      self.props.hover = true
-    end)
-
-    self:onPointerExit(function()
-      self.props.hover = false
-    end)
-
-    return function(_, x, y, w, h)
-      lg.setColor(1, 1, 1)
-      lg.rectangle("line", x, y, w, h)
-      if self.props.hover then
-        lg.setColor(1, 1, 0)
-        lg.rectangle("line", x - 3, y - 3, w + 6, h + 6)
-      end
-      lg.setColor(1, 1, 1)
-      lg.printf(label, font, x, y + (h - font:getHeight()) / 2, w, "center")
-    end
-  end)(scene)
-end
-
 local machine = b.state_machine()
 
 machine:add_state("intro", {
   enter = function(ctx)
     ctx.scene = Inky.scene()
     ctx.pointer = Inky.pointer(ctx.scene)
-    ctx.buttonOnePlayer = newButton(ctx.scene, "One Player", function()
+    ctx.buttonOnePlayer = Button(ctx.scene, "One Player", font, function()
       state.player1.type = "human"
       state.player2.type = "cpu"
       machine:set_state("playing")
     end)
-    ctx.buttonTwoPlayers = newButton(ctx.scene, "Two Players", function()
+    ctx.buttonTwoPlayers = Button(ctx.scene, "Two Players", font, function()
       state.player1.type = "human"
       state.player2.type = "human"
       machine:set_state("playing")
     end)
-    ctx.buttonMainMenu = newButton(ctx.scene, "Back to Main Menu", function()
+    ctx.buttonMainMenu = Button(ctx.scene, "Back to Main Menu", font, function()
       mainBus:publish("open_index")
     end)
   end,
