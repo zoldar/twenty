@@ -17,12 +17,13 @@ GAMES = {
 
 Index = {}
 
-local font, menu, scene, pointer
+local font, titleFont, menu, scene, pointer
 
 local function setupIndex(bus, games)
   scene = Inky.scene()
   pointer = Inky.pointer(scene)
   font = lg.newFont(14)
+  titleFont = lg.newFont(26)
   menu = f.map(GAMES, function(entry, idx)
     return Button(scene, entry.name, font, function()
       bus:publish("open", entry.game)
@@ -55,6 +56,9 @@ function Index.draw()
 
   lg.setColor(.2, .2, .2)
   lg.rectangle("fill", 0, 0, w, h)
+
+  lg.setColor(1, 1, 1)
+  lg.printf("20 GAMES CHALLENGE", titleFont, 0, 20, w, "center")
 
   scene:beginFrame()
   for idx, button in ipairs(menu) do
