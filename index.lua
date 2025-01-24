@@ -46,6 +46,7 @@ end
 function Index.keypressed(bus, key)
   if (key == 'return' or key == 'space') and hover > 0 then
     openGame(bus)
+    return true
   end
 end
 

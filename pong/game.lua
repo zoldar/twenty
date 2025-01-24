@@ -3,6 +3,7 @@ local lk = love.keyboard
 local push = require("lib/push/push")
 local b = require("lib/batteries")
 local slick = require("lib.slick.slick")
+local Inky = require("lib/inky")
 
 PADDLE_HEIGHT = 100
 PADDLE_WIDTH = 20
@@ -13,7 +14,7 @@ SPEED_INCREMENT = 10
 
 Game = {}
 
-local font, world, state, timer
+local font, world, state, mainBus
 
 local function getPlayerInput(player)
   local y = 0
@@ -86,21 +87,78 @@ end
 local function randomDirection()
   local angle1 = love.math.random(-math.pi / 4, math.pi / 4)
   local angle2 = love.math.random(-math.pi * 5 / 4, -math.pi * 3 / 4)
-  return b.vec2():polar(1, b.table.pick_random({angle1, angle2}))
+  return b.vec2():polar(1, b.table.pick_random({ angle1, angle2 }))
+end
+
+local function newButton(scene, label, action)
+  return Inky.defineElement(function(self)
+    self.props.hover = false
+
+    self:onPointer("release", action)
+
+    self:onPointerEnter(function()
+      self.props.hover = true
+    end)
+
+    self:onPointerExit(function()
+      self.props.hover = false
+    end)
+
+    return function(_, x, y, w, h)
+      lg.setColor(1, 1, 1)
+      lg.rectangle("line", x, y, w, h)
+      if self.props.hover then
+        lg.setColor(1, 1, 0)
+        lg.rectangle("line", x - 3, y - 3, w + 6, h + 6)
+      end
+      lg.setColor(1, 1, 1)
+      lg.printf(label, font, x, y + (h - font:getHeight()) / 2, w, "center")
+    end
+  end)(scene)
 end
 
 local machine = b.state_machine()
 
 machine:add_state("intro", {
-  draw = function()
+  enter = function(ctx)
+    ctx.scene = Inky.scene()
+    ctx.pointer = Inky.pointer(ctx.scene)
+    ctx.buttonOnePlayer = newButton(ctx.scene, "One Player", function()
+      state.player1.type = "human"
+      state.player2.type = "cpu"
+      machine:set_state("playing")
+    end)
+    ctx.buttonTwoPlayers = newButton(ctx.scene, "Two Players", function()
+      state.player1.type = "human"
+      state.player2.type = "human"
+      machine:set_state("playing")
+    end)
+    ctx.buttonMainMenu = newButton(ctx.scene, "Back to Main Menu", function()
+      mainBus:publish("open_index")
+    end)
+  end,
+  update = function(ctx)
+    local mx, my = love.mouse.getX(), love.mouse.getY()
+    local lx, ly = push:toGame(mx, my)
+    ctx.pointer:setPosition(lx, ly)
+  end,
+  draw = function(ctx)
     local w, h = push:getDimensions()
+    ctx.scene:beginFrame()
+
     lg.setColor(1, 1, 1)
-    lg.print("PONG", font, (w - font:getWidth("PONG")) / 2, (h - font:getHeight()) / 2)
+    lg.printf("PONG", font, 0, 100, w, "center")
+
+    ctx.buttonOnePlayer:render((w - 280) / 2, 150, 280, 40)
+    ctx.buttonTwoPlayers:render((w - 280) / 2, 200, 280, 40)
+    ctx.buttonMainMenu:render((w - 280) / 2, 250, 280, 40)
+
+    ctx.scene:finishFrame()
   end
 })
 
 machine:add_state("playing", {
-  update = function(_state, dt)
+  update = function(_ctx, dt)
     updateBall(dt)
     updatePlayer(state.player1, dt)
     updatePlayer(state.player2, dt)
@@ -140,11 +198,11 @@ machine:add_state("score", {
   end
 })
 
-function Game.load()
+function Game.load(bus)
   local w, h = push:getDimensions()
   local middle = (h - PADDLE_HEIGHT) / 2
+  mainBus = bus
   font = lg.newFont(26)
-  timer = b.timer(nil, nil)
   state = {
     leftEdge = 0,
     rightEdge = w,
@@ -221,6 +279,21 @@ function Game.keypressed(_bus, key)
     if machine:in_state("intro") then
       machine:set_state("playing")
     end
+  end
+
+  if (key == "q" or key == "escape") then
+    if machine:in_state("playing") then
+      machine:set_state("intro")
+      return true
+    end
+  end
+
+  return false
+end
+
+function Game.mousereleased(_bus, _x, _y, button)
+  if button == 1 and machine:current_state().pointer then
+    machine:current_state().pointer:raise("release")
   end
 end
 

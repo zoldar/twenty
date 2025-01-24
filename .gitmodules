@@ -7,3 +7,6 @@
 [submodule "lib/slick"]
 	path = lib/slick
 	url = https://github.com/erinmaus/slick.git
+[submodule "lib/inky"]
+	path = lib/inky
+	url = https://github.com/Keyslam/Inky.git

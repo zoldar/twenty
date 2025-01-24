@@ -28,10 +28,14 @@ function love.load()
     bus = b.pubsub()
   }
 
+  state.bus:subscribe("open_index", function()
+    state.bus:publish("open", Index)
+  end)
+
   state.bus:subscribe("open", function(view)
     local oldView = state.currentView
     state.currentView = view
-    state.currentView.load()
+    state.currentView.load(state.bus)
 
     if oldView.unload then
       oldView.unload()
@@ -48,19 +52,26 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
-  if key == 'q' or key == 'escape' then
-    state.bus:publish("open", Index)
-    return
+  local inputHandled = false
+  if state.currentView.keypressed then
+    inputHandled = state.currentView.keypressed(state.bus, key)
   end
 
-  if state.currentView.keypressed then
-    state.currentView.keypressed(state.bus, key)
+  if not inputHandled and (key == 'q' or key == 'escape') then
+    state.bus:publish("open", Index)
+    return
   end
 end
 
 function love.mousepressed(x, y, button)
   if state.currentView.mousepressed then
     state.currentView.mousepressed(state.bus, x, y, button)
+  end
+end
+
+function love.mousereleased(x, y, button)
+  if state.currentView.mousereleased then
+    state.currentView.mousereleased(state.bus, x, y, button)
   end
 end
 
