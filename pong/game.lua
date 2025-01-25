@@ -154,6 +154,8 @@ local function updateBall(dt)
   )
 
   if #cols > 0 then
+    assets.bumpSound:stop()
+    assets.bumpSound:play()
     local bounce = cols[1].extra.bounceNormal
     direction.x, direction.y = bounce.x, bounce.y
     state.ball.speed = state.ball.speed + SPEED_INCREMENT
@@ -305,6 +307,7 @@ machine:add_state("score", {
   enter = function(ctx)
     local scoringPlayer = state[state.lastScore]
     scoringPlayer.score = scoringPlayer.score + 1
+    assets.scoreSound:play()
 
     if scoringPlayer.score == MAX_SCORE then
       machine:set_state("finished")
@@ -363,6 +366,8 @@ function Game.load(bus)
     helpFont = lg.newFont("assets/Kenney High.ttf", 23),
     scoreFont = lg.newFont("assets/Kenney High.ttf", 32),
     blockFont = lg.newFont("assets/Kenney Blocks.ttf", 64),
+    scoreSound = love.audio.newSource("pong/assets/score.wav", "static"),
+    bumpSound = love.audio.newSource("pong/assets/bump.wav", "static"),
     backdrop = lg.newImage("pong/assets/backdrop.png"),
     ball = lg.newImage("pong/assets/ball.png"),
     paddle = lg.newImage("pong/assets/paddle.png")
