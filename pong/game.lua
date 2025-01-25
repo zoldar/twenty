@@ -218,8 +218,8 @@ machine:add_state("intro", {
     ctx.pointer = Inky.pointer(ctx.scene)
     ctx.buttonOnePlayer = Button(ctx.scene, "One Player", assets.font, function()
       state.player1.type = "human"
-      state.player1.upKey = {"w", "up"}
-      state.player1.downKey = {"s", "down"}
+      state.player1.upKey = { "w", "up" }
+      state.player1.downKey = { "s", "down" }
       state.player2.type = "cpu"
       machine:set_state("playing")
     end)
@@ -252,6 +252,30 @@ machine:add_state("intro", {
     ctx.buttonOnePlayer:render((w - 200) / 2, 150, 200, 40)
     ctx.buttonTwoPlayers:render((w - 200) / 2, 200, 200, 40)
     ctx.buttonMainMenu:render((w - 200) / 2, 250, 200, 40)
+
+    if ctx.buttonOnePlayer.props.hover then
+      lg.setColor(.4, .4, .4)
+      lg.print([[
+      W or UP - move up
+      S or DOWN - move down
+      ]], assets.helpFont, 10, 160)
+    end
+
+    if ctx.buttonTwoPlayers.props.hover then
+      lg.setColor(.4, .4, .4)
+
+      lg.print([[
+      PLAYER 1:
+      W - move up
+      S - move down
+      ]], assets.helpFont, 10, 210)
+
+      lg.print([[
+      PLAYER 2:
+      UP - move up
+      DOWN - move down
+      ]], assets.helpFont, w - 200, 210)
+    end
 
     ctx.scene:finishFrame()
   end
@@ -336,6 +360,7 @@ machine:add_state("finished", {
 function Game.load(bus)
   assets = {
     font = lg.newFont("assets/Kenney High.ttf", 28),
+    helpFont = lg.newFont("assets/Kenney High.ttf", 23),
     scoreFont = lg.newFont("assets/Kenney High.ttf", 32),
     blockFont = lg.newFont("assets/Kenney Blocks.ttf", 64),
     backdrop = lg.newImage("pong/assets/backdrop.png"),
