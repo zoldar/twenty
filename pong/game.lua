@@ -6,17 +6,19 @@ local slick = require("lib.slick.slick")
 local Inky = require("lib/inky")
 local Button = require("ui/button")
 
+TOP_BOUND = 18
+BOTTOM_BOUND = 340
 PADDLE_HEIGHT = 100
 PADDLE_WIDTH = 20
 PADDLE_SPEED = 200
-BALL_RADIUS = 20
+BALL_RADIUS = 15
 BALL_SPEED = 200
 SPEED_INCREMENT = 10
 MAX_SCORE = 5
 
 Game = {}
 
-local font, scoreFont, world, state, mainBus
+local assets, world, state, mainBus
 
 local function randomDirection()
   local angle1 = love.math.random(-math.pi / 4, math.pi / 4)
@@ -31,8 +33,6 @@ local function reset()
     debug = false,
     leftEdge = 0,
     rightEdge = w,
-    topBound = 10,
-    bottomBound = h - 10,
     lastScore = nil,
     player1 = {
       name = "player1",
@@ -82,8 +82,8 @@ local function reset()
   )
 
   world:add({ type = "level" }, 0, 0, slick.newShapeGroup(
-    slick.newRectangleShape(0, 0, w, 10),
-    slick.newRectangleShape(0, h - 10, w, 10)
+    slick.newRectangleShape(0, 0, w, TOP_BOUND),
+    slick.newRectangleShape(0, BOTTOM_BOUND, w, h)
   ))
 end
 
@@ -108,15 +108,15 @@ local function getCPUInput(player)
 
   local y = 0
 
-  if math.abs(player.position.x - state.ball.position.x) > w * 2 / 3 then
+  if math.abs(player.position.x - state.ball.position.x) > w * 0.5 then
     return y
   end
 
-  if ballY > playerY + 10 then
+  if ballY > playerY + 30 then
     y = 1
   end
 
-  if ballY < playerY - 10 then
+  if ballY < playerY - 30 then
     y = -1
   end
 
@@ -133,8 +133,8 @@ local function updatePlayer(player, dt)
 
   player.position.y = b.math.clamp(
     player.position.y + inputY * PADDLE_SPEED * dt,
-    state.topBound,
-    state.bottomBound - PADDLE_HEIGHT
+    TOP_BOUND + 3,
+    BOTTOM_BOUND - PADDLE_HEIGHT - 3
   )
 
   world:update(player, player.position.x, player.position.y)
@@ -163,38 +163,30 @@ end
 local function drawGame()
   local w, h = push:getDimensions()
 
-  lg.setColor(.2, .2, .2)
+  lg.setColor(1, 1, 1)
 
-  lg.rectangle("fill", 0, 0, w, state.topBound)
-  lg.rectangle("fill", 0, state.bottomBound, w, h)
+  lg.draw(assets.backdrop, 0, 0)
 
   lg.setLineWidth(3)
-  lg.line(w / 2, 0, w / 2, h)
+  lg.line(w / 2, 30, w / 2, h - 30)
   lg.setLineWidth(1)
 
-  lg.setColor(.8, .8, .8)
-
-  lg.rectangle(
-    "fill",
-    state.player1.position.x,
-    state.player1.position.y,
-    PADDLE_WIDTH,
-    PADDLE_HEIGHT
+  lg.draw(
+    assets.paddle,
+    state.player1.position.x - 1,
+    state.player1.position.y
   )
 
-  lg.rectangle(
-    "fill",
-    state.player2.position.x,
-    state.player2.position.y,
-    PADDLE_WIDTH,
-    PADDLE_HEIGHT
+  lg.draw(
+    assets.paddle,
+    state.player2.position.x - 1,
+    state.player2.position.y
   )
 
-  lg.circle(
-    "fill",
-    state.ball.position.x,
-    state.ball.position.y,
-    BALL_RADIUS
+  lg.draw(
+    assets.ball,
+    state.ball.position.x - BALL_RADIUS - 1,
+    state.ball.position.y - BALL_RADIUS
   )
 
   if state.debug then
@@ -207,13 +199,13 @@ local function drawUI()
 
   lg.print(
     state.player1.score,
-    scoreFont, w / 2 - 30 - scoreFont:getWidth(state.player1.score),
-    15
+    assets.scoreFont, w / 2 - 30 - assets.scoreFont:getWidth(state.player1.score),
+    20
   )
   lg.print(
-    state.player2.score, scoreFont,
+    state.player2.score, assets.scoreFont,
     w / 2 + 30,
-    15
+    20
   )
 end
 
@@ -224,17 +216,23 @@ machine:add_state("intro", {
     reset()
     ctx.scene = Inky.scene()
     ctx.pointer = Inky.pointer(ctx.scene)
-    ctx.buttonOnePlayer = Button(ctx.scene, "One Player", font, function()
+    ctx.buttonOnePlayer = Button(ctx.scene, "One Player", assets.font, function()
       state.player1.type = "human"
+      state.player1.upKey = {"w", "up"}
+      state.player1.downKey = {"s", "down"}
       state.player2.type = "cpu"
       machine:set_state("playing")
     end)
-    ctx.buttonTwoPlayers = Button(ctx.scene, "Two Players", font, function()
+    ctx.buttonTwoPlayers = Button(ctx.scene, "Two Players", assets.font, function()
       state.player1.type = "human"
+      state.player1.upKey = "w"
+      state.player1.downKey = "s"
       state.player2.type = "human"
+      state.player2.upKey = "up"
+      state.player2.downKey = "down"
       machine:set_state("playing")
     end)
-    ctx.buttonMainMenu = Button(ctx.scene, "Back to Main Menu", font, function()
+    ctx.buttonMainMenu = Button(ctx.scene, "Back to Main Menu", assets.font, function()
       mainBus:publish("open_index")
     end)
   end,
@@ -244,15 +242,16 @@ machine:add_state("intro", {
     ctx.pointer:setPosition(lx, ly)
   end,
   draw = function(ctx)
+    lg.draw(assets.backdrop, 0, 0)
     local w, _h = push:getDimensions()
     ctx.scene:beginFrame()
 
     lg.setColor(1, 1, 1)
-    lg.printf("PONG", font, 0, 100, w, "center")
+    lg.printf("PONG", assets.blockFont, 0, 40, w, "center")
 
-    ctx.buttonOnePlayer:render((w - 280) / 2, 150, 280, 40)
-    ctx.buttonTwoPlayers:render((w - 280) / 2, 200, 280, 40)
-    ctx.buttonMainMenu:render((w - 280) / 2, 250, 280, 40)
+    ctx.buttonOnePlayer:render((w - 200) / 2, 150, 200, 40)
+    ctx.buttonTwoPlayers:render((w - 200) / 2, 200, 200, 40)
+    ctx.buttonMainMenu:render((w - 200) / 2, 250, 200, 40)
 
     ctx.scene:finishFrame()
   end
@@ -329,21 +328,27 @@ machine:add_state("finished", {
     drawUI()
     lg.printf(
       ctx.winner.name .. " won!",
-      font, 0, (h - font:getHeight()) / 2, w, "center"
+      assets.font, 0, (h - assets.font:getHeight()) / 2, w, "center"
     )
   end
 })
 
 function Game.load(bus)
+  assets = {
+    font = lg.newFont("assets/Kenney High.ttf", 28),
+    scoreFont = lg.newFont("assets/Kenney High.ttf", 32),
+    blockFont = lg.newFont("assets/Kenney Blocks.ttf", 64),
+    backdrop = lg.newImage("pong/assets/backdrop.png"),
+    ball = lg.newImage("pong/assets/ball.png"),
+    paddle = lg.newImage("pong/assets/paddle.png")
+  }
   mainBus = bus
-  font = lg.newFont(26)
-  scoreFont = lg.newFont(18)
   reset()
   machine:set_state("intro")
 end
 
 function Game.unload()
-  font = nil
+  assets = nil
   state = nil
   world = nil
 end
