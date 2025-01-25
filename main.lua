@@ -1,7 +1,6 @@
 local lg = love.graphics
 local lw = love.window
 local b = require("lib/batteries")
-local f = b.functional
 local push = require("lib/push/push")
 local Index = require("index")
 
