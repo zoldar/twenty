@@ -81,7 +81,7 @@ local function updatePlayer(dt)
     state.player.y
   )
 
-  state.player.x = b.math.lerp(state.player.x, state.player.forwardX, 0.01)
+  state.player.x = b.math.lerp(state.player.x, state.player.forwardX, 0.1 * dt)
   state.player.y = state.player.y - state.player.thrust * dt + GRAVITY * dt
 
   state.player.x, state.player.y = world:move(
