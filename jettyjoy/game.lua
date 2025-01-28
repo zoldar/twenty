@@ -72,6 +72,15 @@ local function updatePlayer(dt)
     state.player.thrust = b.math.lerp(state.player.thrust, 0, 0.1)
   end
 
+  world:push(
+    state.player,
+    function(item, _shape, _otherIteam, otherShape)
+      return item.type == "player" and otherShape.tag == "push"
+    end,
+    state.player.x,
+    state.player.y
+  )
+
   state.player.x = b.math.lerp(state.player.x, state.player.forwardX, 0.01)
   state.player.y = state.player.y - state.player.thrust * dt + GRAVITY * dt
 

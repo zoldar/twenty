@@ -1,7 +1,6 @@
 local lm = love.math
 local b = require("lib/batteries")
 local slick = require("lib.slick.slick")
-local common = require("jettyjoy/entities/common")
 
 Laser = {}
 
@@ -44,7 +43,8 @@ end
 function Laser:update(world, dt)
   local newX = self.x - self.speed * dt
 
-  common.updatePushEntity(world, self, newX, self.y)
+  self.x = newX
+  world:update(self, self.x, self.y)
 end
 
 function Laser:onCollide(player)
