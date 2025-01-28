@@ -12,6 +12,10 @@ GAMES = {
   {
     name = "Pong",
     game = require("pong/game")
+  },
+  {
+    name = "Jetty Joy",
+    game = require("jettyjoy/game")
   }
 }
 
