@@ -12,9 +12,12 @@ PLAYER_POSITION_RATIO = 0.3
 GRAVITY = 300
 MAX_THRUST = 600
 SPAWN_POINT = 200
-ENTITIES = {
+STATIC_ENTITIES = {
   require("jettyjoy/entities/obstacle"),
   require("jettyjoy/entities/laser")
+}
+DYNAMIC_ENTITIES = {
+  require("jettyjoy/entities/projectile")
 }
 
 JettyJoy = {}
@@ -39,7 +42,8 @@ local function reset()
       x = forwardX,
       y = ground - PLAYER_HEIGHT
     },
-    entities = {}
+    staticEntities = {},
+    dynamicEntities = {}
   }
 
   world = slick.newWorld(w, h)
@@ -57,11 +61,19 @@ local function reset()
   ))
 end
 
-local function spawnEntity(_dt)
-  local nextEntity = b.table.pick_random(ENTITIES):spawn(state, world)
+local function spawnStaticEntity(_dt)
+  local lastEntity = b.table.back(state.staticEntities)
 
-  if nextEntity then
-    table.insert(state.entities, nextEntity)
+  if not lastEntity or state.spawnX - lastEntity.x - lastEntity.width >= 200 then
+    local nextEntity = b.table.pick_random(STATIC_ENTITIES):spawn(state, world)
+    table.insert(state.staticEntities, nextEntity)
+  end
+end
+
+local function spawnDynamicEntities(_dt)
+  if #state.dynamicEntities == 0 then
+    local nextEntity = b.table.pick_random(DYNAMIC_ENTITIES):spawn(state, world)
+    table.insert(state.dynamicEntities, nextEntity)
   end
 end
 
@@ -81,7 +93,7 @@ local function updatePlayer(dt)
     state.player.y
   )
 
-  state.player.x = b.math.lerp(state.player.x, state.player.forwardX, 0.1 * dt)
+  state.player.x = b.math.lerp(state.player.x, state.player.forwardX, 0.5 * dt)
   state.player.y = state.player.y - state.player.thrust * dt + GRAVITY * dt
 
   state.player.x, state.player.y = world:move(
@@ -105,23 +117,39 @@ local function updatePlayer(dt)
   end
 end
 
+local function updateEntities(entities, dt)
+  for idx, entity in ipairs(entities) do
+    entity:update(world, dt)
+    if entity.x + entity.width < -100 then
+      world:remove(entity)
+      table.remove(entities, idx)
+    end
+  end
+end
+
+local function drawEntities(entities)
+  for _, entity in ipairs(entities) do
+    if entity.draw then
+      entity:draw()
+    end
+  end
+end
+
 function JettyJoy.load()
   reset()
 end
 
 function JettyJoy.update(dt)
-  for idx, entity in ipairs(state.entities) do
-    entity:update(world, dt)
-    if entity.x + entity.width < -100 then
-      world:remove(entity)
-      table.remove(state.entities, idx)
-    end
-  end
+  updateEntities(state.staticEntities, dt)
+  updateEntities(state.dynamicEntities, dt)
   updatePlayer(dt)
-  spawnEntity(dt)
+  spawnStaticEntity(dt)
+  spawnDynamicEntities(dt)
 end
 
 function JettyJoy.draw()
+  drawEntities(state.staticEntities)
+  drawEntities(state.dynamicEntities)
   slick.drawWorld(world)
 end
 

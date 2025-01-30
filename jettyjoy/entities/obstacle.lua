@@ -1,19 +1,14 @@
 local lm = love.math
-local b = require("lib/batteries")
 local slick = require("lib.slick.slick")
 
 Obstacle = {}
 
 function Obstacle:spawn(game, world)
-  local lastEntity = b.table.back(game.entities)
-  if lastEntity and game.spawnX - lastEntity.x - lastEntity.width < 200 then
-    return nil
-  end
-
   local height = lm.random(50, 200)
 
   local state = {
     type = "obstacle",
+    group = "static",
     width = 50,
     height = height,
     x = game.spawnX,
