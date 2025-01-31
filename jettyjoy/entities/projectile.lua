@@ -6,9 +6,6 @@ local push = require("lib/push/push")
 
 MACHINE = {
   pending = {
-    enter = function(ctx)
-      ctx.timer = lm.random(1, 10)
-    end,
     update = function(ctx, dt)
       ctx.timer = ctx.timer - dt
 
@@ -34,8 +31,12 @@ MACHINE = {
 
 Projectile = {}
 
-function Projectile:spawn(game, world)
-  local height = lm.random(50, 200)
+function Projectile:spawn(game, world, opts)
+  opts = opts or {}
+  local spawnY = opts.spawnY or game.ground - lm.random(50, 200)
+  local startTimer = opts.startTimer or lm.random(1, 10)
+  local machine = b.table.deep_copy(MACHINE)
+  machine.pending.timer = startTimer
 
   local state = {
     damageDealt = false,
@@ -44,9 +45,9 @@ function Projectile:spawn(game, world)
     width = 100,
     height = 20,
     x = game.spawnX,
-    y = game.ground - height,
+    y = spawnY,
     speed = 400,
-    machine = b.state_machine(MACHINE)
+    machine = b.state_machine(machine)
   }
 
   state.machine:set_state("pending")

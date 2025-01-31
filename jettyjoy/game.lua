@@ -17,7 +17,8 @@ STATIC_ENTITIES = {
   require("jettyjoy/entities/laser")
 }
 DYNAMIC_ENTITIES = {
-  require("jettyjoy/entities/projectile")
+  require("jettyjoy/entities/projectile"),
+  require("jettyjoy/entities/projectile_horde")
 }
 
 JettyJoy = {}
@@ -73,7 +74,13 @@ end
 local function spawnDynamicEntities(_dt)
   if #state.dynamicEntities == 0 then
     local nextEntity = b.table.pick_random(DYNAMIC_ENTITIES):spawn(state, world)
-    table.insert(state.dynamicEntities, nextEntity)
+    if type(nextEntity) == "table" then
+      for _, entity in ipairs(nextEntity) do
+        table.insert(state.dynamicEntities, entity)
+      end
+    else
+      table.insert(state.dynamicEntities, nextEntity)
+    end
   end
 end
 
