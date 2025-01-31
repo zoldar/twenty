@@ -10,11 +10,11 @@ local MACHINE = {
       ctx.timer = ctx.timer - dt
 
       if ctx.timer <= 0 then
-        return "warning"
+        return "moving_in"
       end
     end
   },
-  warning = {
+  moving_in = {
     enter = function(ctx)
       ctx.timer = 2
     end,
@@ -22,16 +22,29 @@ local MACHINE = {
       ctx.timer = ctx.timer - dt
 
       if ctx.timer <= 0 then
-        return "flying"
+        return "damage"
       end
     end
   },
-  flying = {}
+  damage = {
+    enter = function(ctx)
+      ctx.timer = 3
+    end,
+    update = function(ctx, dt)
+      ctx.timer = ctx.timer - dt
+
+      if ctx.timer <= 0 then
+        return "moving_away"
+      end
+    end
+  },
+  moving_away = {}
 }
 
-Projectile = {}
+DynamicLaser = {}
 
-function Projectile:spawn(game, world, opts)
+function DynamicLaser:spawn(game, world, opts)
+  local w, _ = push:getDimensions()
   opts = opts or {}
   local spawnY = opts.spawnY or game.ground - lm.random(50, 200)
   local startTimer = opts.startTimer or lm.random(1, 10)
@@ -40,10 +53,10 @@ function Projectile:spawn(game, world, opts)
 
   local state = {
     damageDealt = false,
-    type = "projectile",
+    type = "dynamic_laser",
     group = "dynamic",
-    width = 100,
     height = 20,
+    width = w,
     x = game.spawnX,
     y = spawnY,
     speed = 400,
@@ -59,40 +72,41 @@ function Projectile:spawn(game, world, opts)
     object,
     state.x,
     state.y,
-    slick.newRectangleShape(0, 0, state.width, state.height, slick.newTag("damage"))
+    slick.newShapeGroup(
+      slick.newRectangleShape(0, 0, 20, 20, slick.newTag("damage")),
+      slick.newRectangleShape(20, 5, state.width - 40, 10, slick.newTag("damage")),
+      slick.newRectangleShape(state.width - 20, 0, 20, 20, slick.newTag("damage"))
+    )
   )
 
   return object
 end
 
-function Projectile:update(world, dt)
+function DynamicLaser:update(world, dt)
   self.machine:update(dt)
   local currentState = self.machine.current_state_name
-  print("projectile: "..currentState)
+  print("dynamic_laser: "..currentState)
 
-  if currentState == "flying" then
-    local newX = self.x - self.speed * dt
+  local targetX = currentState == "moving_in" and 0 or - self.width - 200
+
+  if currentState == "moving_in" or currentState == "moving_away" then
+    local newX = b.math.lerp(self.x, targetX, 5 * dt)
 
     self.x = newX
     world:update(self, self.x, self.y)
   end
 end
 
-function Projectile:onCollide(player)
-  if not self.damageDealt then
+function DynamicLaser:onCollide(player)
+  local currentState = self.machine.current_state_name
+  if currentState == "damage" and not self.damageDealt then
     self.damageDealt = true
     print("damage dealt")
   end
 end
 
-function Projectile:draw()
-  local currentState = self.machine.current_state_name
-
-  if currentState == "warning" then
-    local w, _ = push:getDimensions()
-
-    lg.circle("line", w - 40, self.y + self.height / 2, 20)
-  end
+function DynamicLaser:draw()
+  -- local currentState = self.machine.current_state_name
 end
 
-return Projectile
+return DynamicLaser

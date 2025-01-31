@@ -18,7 +18,8 @@ STATIC_ENTITIES = {
 }
 DYNAMIC_ENTITIES = {
   require("jettyjoy/entities/projectile"),
-  require("jettyjoy/entities/projectile_horde")
+  require("jettyjoy/entities/projectile_horde"),
+  require("jettyjoy/entities/laser_group")
 }
 
 JettyJoy = {}
@@ -65,7 +66,7 @@ end
 local function spawnStaticEntity(_dt)
   local lastEntity = b.table.back(state.staticEntities)
 
-  if not lastEntity or state.spawnX - lastEntity.x - lastEntity.width >= 200 then
+  if not lastEntity or state.spawnX - lastEntity.x - lastEntity.width >= 500 then
     local nextEntity = b.table.pick_random(STATIC_ENTITIES):spawn(state, world)
     table.insert(state.staticEntities, nextEntity)
   end
@@ -74,7 +75,7 @@ end
 local function spawnDynamicEntities(_dt)
   if #state.dynamicEntities == 0 then
     local nextEntity = b.table.pick_random(DYNAMIC_ENTITIES):spawn(state, world)
-    if type(nextEntity) == "table" then
+    if not nextEntity.type then
       for _, entity in ipairs(nextEntity) do
         table.insert(state.dynamicEntities, entity)
       end
@@ -125,11 +126,11 @@ local function updatePlayer(dt)
 end
 
 local function updateEntities(entities, dt)
-  for idx, entity in ipairs(entities) do
+  for _, entity in ipairs(entities) do
     entity:update(world, dt)
     if entity.x + entity.width < -100 then
       world:remove(entity)
-      table.remove(entities, idx)
+      b.table.remove_value(entities, entity)
     end
   end
 end

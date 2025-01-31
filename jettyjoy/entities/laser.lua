@@ -49,7 +49,12 @@ function Laser:update(world, dt)
 
   if self.rotating then
     self.rotation = self.rotation + math.pi * dt / 4
-    world:rotate(self, self.rotation)
+    world:rotate(
+      self,
+      self.rotation,
+      function() return false end, function(item)
+        return item.type == "player"
+      end)
   end
 end
 
