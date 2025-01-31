@@ -4,8 +4,15 @@ local b = require("lib/batteries")
 
 Laser = {}
 
+function Laser.canSpawn(game)
+  return not b.functional.any(
+    game.dynamicEntities,
+    function(entity) return entity.type == "dynamic_laser" end
+  )
+end
+
 function Laser:spawn(game, world)
-  local height = lm.random(100, 200)
+  local height = lm.random(100, 150)
   local y = lm.random(game.ceiling + height / 2, game.ground - height / 2)
   local rotation = lm.random(0, 7) * math.pi / 4
 

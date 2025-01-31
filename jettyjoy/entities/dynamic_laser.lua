@@ -85,7 +85,6 @@ end
 function DynamicLaser:update(world, dt)
   self.machine:update(dt)
   local currentState = self.machine.current_state_name
-  print("dynamic_laser: "..currentState)
 
   local targetX = currentState == "moving_in" and 0 or - self.width - 200
 

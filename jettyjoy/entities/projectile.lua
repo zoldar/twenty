@@ -46,7 +46,7 @@ function Projectile:spawn(game, world, opts)
     height = 20,
     x = game.spawnX,
     y = spawnY,
-    speed = 400,
+    speed = 700,
     machine = b.state_machine(machine)
   }
 
@@ -68,7 +68,6 @@ end
 function Projectile:update(world, dt)
   self.machine:update(dt)
   local currentState = self.machine.current_state_name
-  print("projectile: "..currentState)
 
   if currentState == "flying" then
     local newX = self.x - self.speed * dt

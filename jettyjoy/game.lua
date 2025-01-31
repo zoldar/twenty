@@ -19,6 +19,7 @@ STATIC_ENTITIES = {
 DYNAMIC_ENTITIES = {
   require("jettyjoy/entities/projectile"),
   require("jettyjoy/entities/projectile_horde"),
+  require("jettyjoy/entities/dynamic_laser"),
   require("jettyjoy/entities/laser_group")
 }
 
@@ -67,8 +68,10 @@ local function spawnStaticEntity(_dt)
   local lastEntity = b.table.back(state.staticEntities)
 
   if not lastEntity or state.spawnX - lastEntity.x - lastEntity.width >= 500 then
-    local nextEntity = b.table.pick_random(STATIC_ENTITIES):spawn(state, world)
-    table.insert(state.staticEntities, nextEntity)
+    local nextEntity = b.table.pick_random(STATIC_ENTITIES)
+    if not nextEntity.canSpawn or nextEntity.canSpawn(state) then
+      table.insert(state.staticEntities, nextEntity:spawn(state, world))
+    end
   end
 end
 

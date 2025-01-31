@@ -2,7 +2,7 @@ local lm = love.math
 local b = require("lib/batteries")
 local DynamicLaser = require("jettyjoy/entities/dynamic_laser")
 
-MIN_DISTANCE = 100
+MIN_DISTANCE = 200
 
 LaserGroup = {}
 
