@@ -80,7 +80,7 @@ end
 function Projectile:onCollide(player)
   if not self.damageDealt then
     self.damageDealt = true
-    print("damage dealt")
+    player.hit = true
   end
 end
 

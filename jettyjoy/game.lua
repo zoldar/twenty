@@ -33,6 +33,7 @@ local function reset()
   local forwardX = w * PLAYER_POSITION_RATIO
 
   state = {
+    debug = true,
     distance = 0,
     speed = SPEED,
     ground = ground,
@@ -40,6 +41,7 @@ local function reset()
     spawnX = w + SPAWN_POINT,
     player = {
       type = "player",
+      hit = false,
       thrust = 0,
       forwardX = forwardX,
       x = forwardX,
@@ -89,7 +91,7 @@ local function spawnDynamicEntities(_dt)
 end
 
 local function updatePlayer(dt)
-  if lk.isDown("space") then
+  if lk.isDown("space") and not state.player.hit then
     state.player.thrust = b.math.lerp(state.player.thrust, MAX_THRUST, 0.1)
   else
     state.player.thrust = b.math.lerp(state.player.thrust, 0, 0.1)
@@ -98,7 +100,7 @@ local function updatePlayer(dt)
   world:push(
     state.player,
     function(item, _shape, _otherIteam, otherShape)
-      return item.type == "player" and otherShape.tag == "push"
+      return item.type == "player" and not item.hit and otherShape.tag == "push"
     end,
     state.player.x,
     state.player.y
@@ -111,7 +113,9 @@ local function updatePlayer(dt)
     state.player,
     state.player.x,
     state.player.y,
-    function(_item, other, _shape, otherShape) return otherShape.tag == "push" end
+    function(_item, other, _shape, otherShape)
+      return not state.player.hit and otherShape.tag == "push"
+    end
   )
 
   local _, _, cols = world:check(
@@ -146,25 +150,100 @@ local function drawEntities(entities)
   end
 end
 
+local machine = b.state_machine()
+
+machine:add_state("intro", {
+  enter = function()
+    reset()
+  end,
+  draw = function()
+    local w, h = push:getDimensions()
+    lg.printf([[
+      JETTY JOY
+      PRESS SPACE TO CONTINUE
+      ]], 0, h / 2, w, "center")
+  end
+})
+
+machine:add_state("playing", {
+  update = function(_ctx, dt)
+    state.distance = state.distance + 5 * dt
+    updateEntities(state.staticEntities, dt)
+    updateEntities(state.dynamicEntities, dt)
+    updatePlayer(dt)
+    spawnStaticEntity(dt)
+    spawnDynamicEntities(dt)
+
+    if state.player.hit or state.player.x < -100 then
+      state.player.hit = true
+      return "finish"
+    end
+  end,
+  draw = function()
+    local w, _ = push:getDimensions()
+    drawEntities(state.staticEntities)
+    drawEntities(state.dynamicEntities)
+    lg.printf("DISTANCE: " .. math.floor(state.distance), 0, 20, w, "right")
+    slick.drawWorld(world)
+  end
+})
+
+machine:add_state("finish", {
+  enter = function(ctx)
+    ctx.timer = 5
+  end,
+  update = function(ctx, dt)
+    ctx.timer = ctx.timer - dt
+    updateEntities(state.staticEntities, dt)
+    updateEntities(state.dynamicEntities, dt)
+    updatePlayer(dt)
+
+    if ctx.timer < 0 then
+      return "intro"
+    end
+  end,
+  draw = function()
+    local w, h = push:getDimensions()
+    drawEntities(state.staticEntities)
+    drawEntities(state.dynamicEntities)
+    lg.printf("DISTANCE: " .. math.floor(state.distance), 0, 20, w, "right")
+    lg.printf("YOU DIED!", 0, h / 2, w, "center")
+    slick.drawWorld(world)
+  end
+})
+
 function JettyJoy.load()
   reset()
+  machine:set_state("intro")
 end
 
 function JettyJoy.update(dt)
-  state.distance = state.distance + dt
-  updateEntities(state.staticEntities, dt)
-  updateEntities(state.dynamicEntities, dt)
-  updatePlayer(dt)
-  spawnStaticEntity(dt)
-  spawnDynamicEntities(dt)
+  machine:update(dt)
+end
+
+function JettyJoy.keypressed(_bus, key)
+  if (key == "space" or key == "return") then
+    if machine:in_state("intro") then
+      machine:set_state("playing")
+    end
+  end
+
+  if (key == "d") then
+    state.debug = not state.debug
+  end
+
+  if (key == "q" or key == "escape") then
+    if not machine:in_state("intro") then
+      machine:set_state("intro")
+      return true
+    end
+  end
+
+  return false
 end
 
 function JettyJoy.draw()
-  local w, _ = push:getDimensions()
-  drawEntities(state.staticEntities)
-  drawEntities(state.dynamicEntities)
-  lg.printf("DISTANCE: "..math.floor(state.distance), 0, 20, w, "right")
-  slick.drawWorld(world)
+  machine:draw()
 end
 
 return JettyJoy

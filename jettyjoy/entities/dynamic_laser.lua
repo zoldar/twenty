@@ -100,7 +100,7 @@ function DynamicLaser:onCollide(player)
   local currentState = self.machine.current_state_name
   if currentState == "damage" and not self.damageDealt then
     self.damageDealt = true
-    print("damage dealt")
+    player.hit = true
   end
 end
 
