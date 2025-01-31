@@ -147,6 +147,13 @@ local function updateBall(dt)
   local target = position + direction * state.ball.speed * dt
   local cols
 
+  position.x, position.y = world:push(
+    state.ball,
+    function(item) return item.type == "ball" end,
+    position.x,
+    position.y
+  )
+
   position.x, position.y, cols = world:move(
     state.ball,
     target.x,
