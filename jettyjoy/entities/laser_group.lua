@@ -11,7 +11,8 @@ function LaserGroup:spawn(game, world)
   local spawnYs = { lm.random(topBound, bottomBound) }
   local startTimer = lm.random(1, 10)
 
-  while #spawnYs < 2 do
+  local spawnAttempts = 0
+  while #spawnYs < 2 and spawnAttempts < 10 do
     local newY = lm.random(topBound, bottomBound)
     local tooClose = b.functional.any(spawnYs, function(existing)
       return math.abs(existing - newY) < MIN_DISTANCE
@@ -20,6 +21,7 @@ function LaserGroup:spawn(game, world)
     if not tooClose then
       table.insert(spawnYs, newY)
     end
+    spawnAttempts = spawnAttempts + 1
   end
 
   return b.functional.map(spawnYs, function(y)
