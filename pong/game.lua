@@ -14,6 +14,7 @@ PADDLE_SPEED = 200
 BALL_RADIUS = 15
 BALL_SPEED = 200
 SPEED_INCREMENT = 10
+MAX_SPEED = 1000
 MAX_SCORE = 5
 
 Game = {}
@@ -158,7 +159,7 @@ local function updateBall(dt)
     assets.bumpSound:play()
     local bounce = cols[1].extra.bounceNormal
     direction.x, direction.y = bounce.x, bounce.y
-    state.ball.speed = state.ball.speed + SPEED_INCREMENT
+    state.ball.speed = b.math.clamp(state.ball.speed + SPEED_INCREMENT, 0, MAX_SPEED)
   end
 end
 
