@@ -151,6 +151,7 @@ function JettyJoy.load()
 end
 
 function JettyJoy.update(dt)
+  state.distance = state.distance + dt
   updateEntities(state.staticEntities, dt)
   updateEntities(state.dynamicEntities, dt)
   updatePlayer(dt)
@@ -159,8 +160,10 @@ function JettyJoy.update(dt)
 end
 
 function JettyJoy.draw()
+  local w, _ = push:getDimensions()
   drawEntities(state.staticEntities)
   drawEntities(state.dynamicEntities)
+  lg.printf("DISTANCE: "..math.floor(state.distance), 0, 20, w, "right")
   slick.drawWorld(world)
 end
 
