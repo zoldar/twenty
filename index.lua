@@ -11,12 +11,20 @@ BUTTON_MARGIN = 10
 GAMES = {
   {
     name = "Pong",
-    game = require("pong/game")
+    game = require("pong/game"),
   },
   {
     name = "Jetty Joy",
-    game = require("jettyjoy/game")
-  }
+    game = require("jettyjoy/game"),
+  },
+  {
+    name = "JoyRaid",
+    game = require("joyraid/game"),
+  },
+  {
+    name = "Brawl",
+    game = require("brawl/game"),
+  },
 }
 
 Index = {}
@@ -37,6 +45,7 @@ end
 
 function Index.load(bus, games)
   setupIndex(bus, games)
+  bus:publish("open", require("brawl/game"))
 end
 
 function Index.update(_bus, key)
@@ -53,12 +62,9 @@ end
 
 function Index.draw()
   local w, h = push:getDimensions()
-  local startPosition = b.vec2(
-    w / 2 - (BUTTON_SIDE + BUTTON_MARGIN) * #GAMES / 2,
-    h / 2 - BUTTON_SIDE / 2
-  )
+  local startPosition = b.vec2(w / 2 - (BUTTON_SIDE + BUTTON_MARGIN) * #GAMES / 2, h / 2 - BUTTON_SIDE / 2)
 
-  lg.setColor(.2, .2, .2)
+  lg.setColor(0.2, 0.2, 0.2)
   lg.rectangle("fill", 0, 0, w, h)
 
   lg.setColor(1, 1, 1)
@@ -67,10 +73,7 @@ function Index.draw()
   scene:beginFrame()
   for idx, button in ipairs(menu) do
     button.props.margin = BUTTON_MARGIN
-    local position = startPosition + b.vec2(
-      (idx - 1) * (BUTTON_SIDE + BUTTON_MARGIN),
-      0
-    )
+    local position = startPosition + b.vec2((idx - 1) * (BUTTON_SIDE + BUTTON_MARGIN), 0)
     button:render(position.x, position.y, BUTTON_SIDE, BUTTON_SIDE)
   end
   scene:finishFrame()

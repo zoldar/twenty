@@ -10,3 +10,6 @@
 [submodule "lib/inky"]
 	path = lib/inky
 	url = https://github.com/Keyslam/Inky.git
+[submodule "lib/cam11"]
+	path = lib/cam11
+	url = https://notabug.org/pgimeno/cam11.git
